@@ -25,6 +25,7 @@ var DateTimePickerMonths = createClass({
 			months = [],
 			renderer = this.props.renderMonth || this.renderMonth,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
+			isValidMonth = this.props.isValidMonth,
 			classes, props, currentMonth, isDisabled, noOfDaysInMonth, daysInMonth, validDay,
 			// Date is irrelevant because we're only interested in month
 			irrelevantDate = 1
@@ -35,17 +36,21 @@ var DateTimePickerMonths = createClass({
 			currentMonth =
 				this.props.viewDate.clone().set({ year: year, month: i, date: irrelevantDate });
 
-			noOfDaysInMonth = currentMonth.endOf( 'month' ).format( 'D' );
-			daysInMonth = Array.from({ length: noOfDaysInMonth }, function( e, i ) {
-				return i + 1;
-			});
-
-			validDay = daysInMonth.find(function( d ) {
-				var day = currentMonth.clone().set( 'date', d );
-				return isValid( day );
-			});
-
-			isDisabled = ( validDay === undefined );
+			if (typeof isValidMonth === 'function') {
+				isDisabled = !isValidMonth(currentMonth);
+			} else {
+				noOfDaysInMonth = currentMonth.endOf( 'month' ).format( 'D' );
+				daysInMonth = Array.from({ length: noOfDaysInMonth }, function( e, i ) {
+					return i + 1;
+				});
+	
+				validDay = daysInMonth.find(function( d ) {
+					var day = currentMonth.clone().set( 'date', d );
+					return isValid( day );
+				});
+	
+				isDisabled = ( validDay === undefined );
+			}
 
 			if ( isDisabled )
 				classes += ' rdtDisabled';

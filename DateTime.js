@@ -33,6 +33,7 @@ var Datetime = createClass({
 		utc: TYPES.bool,
 		displayTimeZone: TYPES.string,
 		input: TYPES.bool,
+		mask: TYPES.object,
 		// dateFormat: TYPES.string | TYPES.bool,
 		// timeFormat: TYPES.string | TYPES.bool,
 		inputProps: TYPES.object,
@@ -45,6 +46,14 @@ var Datetime = createClass({
 		closeOnTab: TYPES.bool
 	},
 
+	isUnfilled: function(value) {
+		return typeof value === 'string' && value.split('').find(function( char ) {
+			return char === '_';
+		});
+	},
+	isWithMask: function() {
+		return this.props.mask && this.props.mask.maskedProps && this.props.mask.maskedComponent;
+	},
 	getInitialState: function() {
 		this.checkTZ( this.props );
 		
@@ -152,7 +161,13 @@ var Datetime = createClass({
 
 		if ( nextProps.value !== this.props.value ||
 			formats.datetime !== this.getFormats( this.props ).datetime ) {
-			updatedState = this.getStateFromProps( nextProps );
+			if (this.isWithMask(nextProps.value)) {
+				if (!this.isUnfilled()) {
+					updatedState = this.getStateFromProps( nextProps );
+				}
+			} else {
+				updatedState = this.getStateFromProps( nextProps );
+			}
 		}
 
 		if ( updatedState.open === undefined ) {
@@ -216,12 +231,22 @@ var Datetime = createClass({
 	},
 
 	onInputChange: function( e ) {
-		var value = e.target === null ? e : e.target.value,
-			localMoment = this.localMoment( value, this.state.inputFormat ),
-			update = { inputValue: value }
-			;
+		var value = e.target === null ? e : e.target.value;
+		var withMask = this.isWithMask();
 
-		if ( localMoment.isValid() && !this.props.value ) {
+		if ( withMask ) {
+			if (!value) {
+				return;
+			}
+			if ( this.isUnfilled(value) ) {
+				return this.props.onChange(value);
+			}
+		}
+
+		var localMoment = this.localMoment( value, this.state.inputFormat ),
+			update = { inputValue: value };
+
+		if ( localMoment.isValid() && !this.props.value) {
 			update.selectedDate = localMoment;
 			update.viewDate = localMoment.clone().startOf('month');
 		} else {
@@ -229,7 +254,8 @@ var Datetime = createClass({
 		}
 
 		return this.setState( update, function() {
-			return this.props.onChange( localMoment.isValid() ? localMoment : this.state.inputValue );
+			var editedValue = withMask ? value : this.state.inputValue;
+			return this.props.onChange(localMoment.isValid() ? localMoment : editedValue );
 		});
 	},
 
@@ -416,7 +442,7 @@ var Datetime = createClass({
 	},
 
 	componentProps: {
-		fromProps: ['value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
+		fromProps: ['value', 'isValidDate', 'isValidDay', 'isValidYear', 'isValidMonth', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
 		fromState: ['viewDate', 'selectedDate', 'updateOn'],
 		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
 	},
@@ -483,6 +509,16 @@ var Datetime = createClass({
 
 			if ( this.props.renderInput ) {
 				children = [ React.createElement('div', { key: 'i' }, this.props.renderInput( finalInputProps, this.openCalendar, this.closeCalendar )) ];
+			} else if ( this.isWithMask() ) {
+				children = [ 
+					React.createElement( this.props.mask.maskedComponent, assign(
+						this.props.mask.maskedProps,
+						finalInputProps,
+						{ key: 'i' }
+					),
+					function(inputProps) {
+						return React.createElement('input', assign({ key: 'in' }, inputProps ));
+					})];
 			} else {
 				children = [ React.createElement('input', assign({ key: 'i' }, finalInputProps ))];
 			}

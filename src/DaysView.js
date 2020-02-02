@@ -62,6 +62,7 @@ var DateTimePickerDays = createClass({
 			days = [],
 			renderer = this.props.renderDay || this.renderDay,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
+			isValidDay = this.props.isValidDay,
 			classes, isDisabled, dayProps, currentDate
 			;
 
@@ -84,7 +85,12 @@ var DateTimePickerDays = createClass({
 			if ( prevMonth.isSame( moment(), 'day' ) )
 				classes += ' rdtToday';
 
-			isDisabled = !isValid( currentDate, selected );
+			if (typeof isValidDay === 'function') {
+				isDisabled = !isValidDay( currentDate, selected );
+			} else {
+				isDisabled = !isValid( currentDate, selected );
+			}
+			
 			if ( isDisabled )
 				classes += ' rdtDisabled';
 

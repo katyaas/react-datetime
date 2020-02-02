@@ -25,6 +25,7 @@ var DateTimePickerYears = createClass({
 			renderer = this.props.renderYear || this.renderYear,
 			selectedDate = this.props.selectedDate,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
+			isValidYear = this.props.isValidYear,
 			classes, props, currentYear, isDisabled, noOfDaysInYear, daysInYear, validDay,
 			// Month and date are irrelevant here because
 			// we're only interested in the year
@@ -38,21 +39,24 @@ var DateTimePickerYears = createClass({
 			currentYear = this.props.viewDate.clone().set(
 				{ year: year, month: irrelevantMonth, date: irrelevantDate } );
 
-			// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
-			// if ( i === -1 | i === 10 )
+			if (typeof isValidYear === 'function') {
+				isDisabled = !isValidYear(currentYear);
+			} else {
+				// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
+				// if ( i === -1 | i === 10 )
 				// classes += ' rdtOld';
-
-			noOfDaysInYear = currentYear.endOf( 'year' ).format( 'DDD' );
-			daysInYear = Array.from({ length: noOfDaysInYear }, function( e, i ) {
-				return i + 1;
-			});
-
-			validDay = daysInYear.find(function( d ) {
-				var day = currentYear.clone().dayOfYear( d );
-				return isValid( day );
-			});
-
-			isDisabled = ( validDay === undefined );
+				noOfDaysInYear = currentYear.endOf( 'year' ).format( 'DDD' );
+				daysInYear = Array.from({ length: noOfDaysInYear }, function( e, i ) {
+					return i + 1;
+				});
+	
+				validDay = daysInYear.find(function( d ) {
+					var day = currentYear.clone().dayOfYear( d );
+					return isValid( day );
+				});
+	
+				isDisabled = ( validDay === undefined );
+			}
 
 			if ( isDisabled )
 				classes += ' rdtDisabled';
