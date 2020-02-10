@@ -4,13 +4,16 @@ var React = require('react'),
 	createClass = require('create-react-class')
 ;
 
+var viewType = 'years';
+
 var DateTimePickerMonths = createClass({
 	render: function() {
+		var pagination  = this.props.renderPagination({ type: viewType, renderRange: 1 });
 		return React.createElement('div', { className: 'rdtMonths' }, [
 			React.createElement('table', { key: 'a' }, React.createElement('thead', {}, React.createElement('tr', {}, [
-				React.createElement('th', { key: 'prev', className: 'rdtPrev', onClick: this.props.subtractTime( 1, 'years' )}, React.createElement('span', {}, '‹' )),
-				React.createElement('th', { key: 'year', className: 'rdtSwitch', onClick: this.props.showView( 'years' ), colSpan: 2, 'data-value': this.props.viewDate.year() }, this.props.viewDate.year() ),
-				React.createElement('th', { key: 'next', className: 'rdtNext', onClick: this.props.addTime( 1, 'years' )}, React.createElement('span', {}, '›' ))
+				pagination[0],
+				React.createElement('th', { key: 'year', className: 'rdtSwitch', onClick: this.props.showView( viewType ), colSpan: 2, 'data-value': this.props.viewDate.year() }, this.props.viewDate.year() ),
+				pagination[1]
 			]))),
 			React.createElement('table', { key: 'months' }, React.createElement('tbody', { key: 'b' }, this.renderMonths()))
 		]);
@@ -33,8 +36,7 @@ var DateTimePickerMonths = createClass({
 
 		while (i < 12) {
 			classes = 'rdtMonth';
-			currentMonth =
-				this.props.viewDate.clone().set({ year: year, month: i, date: irrelevantDate });
+			currentMonth = this.props.viewDate.clone().set({ year: year, month: i, date: irrelevantDate });
 
 			if (typeof isValidMonth === 'function') {
 				isDisabled = !isValidMonth(currentMonth);

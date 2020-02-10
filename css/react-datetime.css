@@ -107,6 +107,15 @@
   vertical-align: top;
 }
 
+.rdtPicker th.rdtNext.disabled,
+.rdtPicker th.rdtPrev.disabled {
+  color: #777;
+  cursor: not-allowed;
+  background: none;
+  border-color: #ddd;
+  opacity: 0.5;
+}
+
 .rdtPrev span,
 .rdtNext span {
   display: block;

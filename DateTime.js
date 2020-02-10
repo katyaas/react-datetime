@@ -68,6 +68,50 @@ var Datetime = createClass({
 		return state;
 	},
 
+	renderPagination: function(props) {
+		var isValid = props.isValid, type = props.type, renderRange = props.renderRange,
+			params = props.params || {};
+
+		var isValidDate = isValid || this.props.isValidDate;
+		var viewDate = params.viewDate || this.state.viewDate;
+		var validatePagination = this.props.validatePagination;
+		var addValue = {}, subtractValue = {};
+
+		// Object.defineProperty(addValue, type, {
+		// 	value: viewDate[type]() + (params.add || renderRange),
+		// 	enumerable: true,
+		// });
+		// Object.defineProperty(subtractValue, type, {
+		// 	value: viewDate[type]() - (params.subtract || renderRange),
+		// 	enumerable: true,
+		// });
+
+		Object.defineProperty(addValue, type, {
+			value: viewDate[type](),
+			enumerable: true,
+		});
+		Object.defineProperty(subtractValue, type, {
+			value: viewDate[type](),
+			enumerable: true,
+		});
+
+		// var nextDatesTab =  moment.utc(Object.assign({ days: '1', months: '0', years: viewDate.years() }, addValue)).add(params.add || renderRange, type);
+		// var prevDatesTab = moment.utc(Object.assign({ months: '11', years: viewDate.years() }, subtractValue )).endOf(type).startOf('days').subtract(params.subtract || renderRange, type);
+		var nextDatesTab = viewDate.clone().startOf(type).add(params.add || renderRange, type);
+		var prevDatesTab = viewDate.clone().endOf(type).startOf('days').subtract(params.subtract || renderRange, type);
+		var nextDate = true;
+		var prevDate = true;
+
+		if ((typeof isValidDate === 'function') && validatePagination) {
+			nextDate = isValidDate(nextDatesTab);
+			prevDate = isValidDate(prevDatesTab);
+		}
+		return [
+			React.createElement('th', { key: 'prev', className: 'rdtPrev' + (prevDate ? '' : ' disabled'), onClick: prevDate ? this.subtractTime( renderRange, type ) : null }, React.createElement('span', {}, '‹' )),
+			React.createElement('th', { key: 'next', className: 'rdtNext' + (nextDate ? '' : ' disabled'), onClick: nextDate ? this.addTime( renderRange, type ) : null }, React.createElement('span', {}, '›' ))
+		];
+	},
+
 	parseDate: function (date, formats) {
 		var parsedDate;
 
@@ -85,10 +129,18 @@ var Datetime = createClass({
 	getStateFromProps: function( props ) {
 		var formats = this.getFormats( props ),
 			date = props.value || props.defaultValue,
+			isValidDate = props.isValidDate,
+			validatePagination = props.validatePagination,
 			selectedDate, viewDate, updateOn, inputValue
 			;
 
 		selectedDate = this.parseDate(date, formats);
+
+		if ((typeof isValidDate === 'function') && validatePagination) {
+			if (selectedDate && !isValidDate(selectedDate)) {
+				selectedDate = null;
+			}
+		}
 
 		viewDate = this.parseDate(props.viewDate, formats);
 
@@ -235,9 +287,10 @@ var Datetime = createClass({
 		var withMask = this.isWithMask();
 
 		if ( withMask ) {
-			if (!value) {
-				return;
-			}
+			// to be determined if it needed or not
+			// if (!value) {
+			// 	return;
+			// }
 			if ( this.isUnfilled(value) ) {
 				return this.props.onChange(value);
 			}
@@ -395,6 +448,7 @@ var Datetime = createClass({
 
 	openCalendar: function( e ) {
 		if ( !this.state.open ) {
+			e.persist();
 			this.setState({ open: true }, function() {
 				this.props.onFocus( e );
 			});
@@ -442,9 +496,9 @@ var Datetime = createClass({
 	},
 
 	componentProps: {
-		fromProps: ['value', 'isValidDate', 'isValidDay', 'isValidYear', 'isValidMonth', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
+		fromProps: ['value', 'isValidDate', 'isValidDay', 'isValidYear', 'isValidMonth', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints', 'validatePagination'],
 		fromState: ['viewDate', 'selectedDate', 'updateOn'],
-		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
+		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside', 'renderPagination']
 	},
 
 	getComponentProps: function() {
@@ -515,10 +569,12 @@ var Datetime = createClass({
 						this.props.mask.maskedProps,
 						finalInputProps,
 						{ key: 'i' }
-					),
-					function(inputProps) {
-						return React.createElement('input', assign({ key: 'in' }, inputProps ));
-					})];
+					)
+					// input func for another mask libs
+					// function(inputProps) {
+					// 	return React.createElement('input', assign({ key: 'in' }, inputProps ));
+					// })];
+				)];  
 			} else {
 				children = [ React.createElement('input', assign({ key: 'i' }, finalInputProps ))];
 			}

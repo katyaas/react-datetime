@@ -5,6 +5,8 @@ var React = require('react'),
 	moment = require('moment')
 	;
 
+var viewType = 'months';
+
 var DateTimePickerDays = createClass({
 	render: function() {
 		var footer = this.renderFooter(),
@@ -12,13 +14,13 @@ var DateTimePickerDays = createClass({
 			locale = date.localeData(),
 			tableChildren
 			;
-
+		var pagination  = this.props.renderPagination({ type: viewType, renderRange: 1 });
 		tableChildren = [
 			React.createElement('thead', { key: 'th' }, [
 				React.createElement('tr', { key: 'h' }, [
-					React.createElement('th', { key: 'p', className: 'rdtPrev', onClick: this.props.subtractTime( 1, 'months' )}, React.createElement('span', {}, '‹' )),
-					React.createElement('th', { key: 's', className: 'rdtSwitch', onClick: this.props.showView( 'months' ), colSpan: 5, 'data-value': this.props.viewDate.month() }, locale.months( date ) + ' ' + date.year() ),
-					React.createElement('th', { key: 'n', className: 'rdtNext', onClick: this.props.addTime( 1, 'months' )}, React.createElement('span', {}, '›' ))
+					pagination[0],
+					React.createElement('th', { key: 's', className: 'rdtSwitch', onClick: this.props.showView( viewType ), colSpan: 5, 'data-value': this.props.viewDate.month() }, locale.months( date ) + ' ' + date.year() ),
+					pagination[1]
 				]),
 				React.createElement('tr', { key: 'd'}, this.getDaysOfWeek( locale ).map( function( day, index ) { return React.createElement('th', { key: day + index, className: 'dow'}, day ); }) )
 			]),
