@@ -64,7 +64,7 @@ var DateTimePickerDays = createClass({
 			days = [],
 			renderer = this.props.renderDay || this.renderDay,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
-			isValidDay = this.props.isValidDay,
+			isValidDay = this.props.isValidUnix,
 			classes, isDisabled, dayProps, currentDate
 			;
 

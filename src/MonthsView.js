@@ -28,7 +28,7 @@ var DateTimePickerMonths = createClass({
 			months = [],
 			renderer = this.props.renderMonth || this.renderMonth,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
-			isValidMonth = this.props.isValidMonth,
+			isValidMonth = this.props.isValidUnix,
 			classes, props, currentMonth, isDisabled, noOfDaysInMonth, daysInMonth, validDay,
 			// Date is irrelevant because we're only interested in month
 			irrelevantDate = 1

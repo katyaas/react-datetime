@@ -33,7 +33,7 @@ var DateTimePickerYears = createClass({
 			renderer = this.props.renderYear || this.renderYear,
 			selectedDate = this.props.selectedDate,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
-			isValidYear = this.props.isValidYear,
+			isValidYear = this.props.isValidUnix,
 			classes, props, currentYear, isDisabled, noOfDaysInYear, daysInYear, validDay,
 			// Month and date are irrelevant here because
 			// we're only interested in the year
@@ -48,7 +48,7 @@ var DateTimePickerYears = createClass({
 				{ year: year, month: irrelevantMonth, date: irrelevantDate } );
 
 			if (typeof isValidYear === 'function') {
-				isDisabled = !isValidYear(currentYear);
+				isDisabled = !isValidYear(currentYear, null, viewType);
 			} else {
 				// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
 				// if ( i === -1 | i === 10 )
