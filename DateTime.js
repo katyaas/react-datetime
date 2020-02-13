@@ -5,7 +5,7 @@ var assign = require('object-assign'),
 	createClass = require('create-react-class'),
 	moment = require('moment'),
 	React = require('react'),
-	defaultMaskComponent = 'react-bootstrap-maskedinput',
+	defaultMaskComponent = require('react-bootstrap-maskedinput').default,
 	CalendarContainer = require('./src/CalendarContainer'),
 	onClickOutside = require('react-onclickoutside').default
 	;
@@ -42,6 +42,7 @@ var Datetime = createClass({
 		timeConstraints: TYPES.object,
 		viewMode: TYPES.oneOf([viewModes.YEARS, viewModes.MONTHS, viewModes.DAYS, viewModes.TIME]),
 		isValidDate: TYPES.func,
+		isValidUnix: TYPES.func,
 		open: TYPES.bool,
 		strictParsing: TYPES.bool,
 		closeOnSelect: TYPES.bool,
@@ -71,22 +72,13 @@ var Datetime = createClass({
 	},
 
 	renderPagination: function(props) {
-		var isValid = props.isValid, type = props.type, renderRange = props.renderRange,
+		var type = props.type, renderRange = props.renderRange,
 			params = props.params || {};
 
-		var isValidDate = isValid || this.props.isValidDate;
+		var isValidUnix = this.props.isValidUnix;
 		var viewDate = params.viewDate || this.state.viewDate;
 		var validatePagination = this.props.validatePagination;
 		var addValue = {}, subtractValue = {};
-
-		// Object.defineProperty(addValue, type, {
-		// 	value: viewDate[type]() + (params.add || renderRange),
-		// 	enumerable: true,
-		// });
-		// Object.defineProperty(subtractValue, type, {
-		// 	value: viewDate[type]() - (params.subtract || renderRange),
-		// 	enumerable: true,
-		// });
 
 		Object.defineProperty(addValue, type, {
 			value: viewDate[type](),
@@ -97,16 +89,14 @@ var Datetime = createClass({
 			enumerable: true,
 		});
 
-		// var nextDatesTab =  moment.utc(Object.assign({ days: '1', months: '0', years: viewDate.years() }, addValue)).add(params.add || renderRange, type);
-		// var prevDatesTab = moment.utc(Object.assign({ months: '11', years: viewDate.years() }, subtractValue )).endOf(type).startOf('days').subtract(params.subtract || renderRange, type);
 		var nextDatesTab = viewDate.clone().startOf(type).add(params.add || renderRange, type);
 		var prevDatesTab = viewDate.clone().endOf(type).startOf('days').subtract(params.subtract || renderRange, type);
 		var nextDate = true;
 		var prevDate = true;
 
-		if ((typeof isValidDate === 'function') && validatePagination) {
-			nextDate = isValidDate(nextDatesTab);
-			prevDate = isValidDate(prevDatesTab);
+		if ((typeof isValidUnix === 'function') && validatePagination) {
+			nextDate = isValidUnix(nextDatesTab);
+			prevDate = isValidUnix(prevDatesTab);
 		}
 		return [
 			React.createElement('th', { key: 'prev', className: 'rdtPrev' + (prevDate ? '' : ' disabled'), onClick: prevDate ? this.subtractTime( renderRange, type ) : null }, React.createElement('span', {}, '‹' )),
@@ -131,15 +121,15 @@ var Datetime = createClass({
 	getStateFromProps: function( props ) {
 		var formats = this.getFormats( props ),
 			date = props.value || props.defaultValue,
-			isValidDate = props.isValidDate,
+			isValidUnix = props.isValidUnix,
 			validatePagination = props.validatePagination,
 			selectedDate, viewDate, updateOn, inputValue
 			;
 
 		selectedDate = this.parseDate(date, formats);
 
-		if ((typeof isValidDate === 'function') && validatePagination) {
-			if (selectedDate && !isValidDate(selectedDate)) {
+		if ((typeof isValidUnix === 'function') && validatePagination) {
+			if (selectedDate && !isValidUnix(selectedDate)) {
 				selectedDate = null;
 			}
 		}
