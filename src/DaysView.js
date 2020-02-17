@@ -88,7 +88,7 @@ var DateTimePickerDays = createClass({
 				classes += ' rdtToday';
 
 			if (typeof isValidDay === 'function') {
-				isDisabled = !isValidDay( currentDate, selected );
+				isDisabled = !isValidDay( currentDate, selected, 'day' );
 			} else {
 				isDisabled = !isValid( currentDate, selected );
 			}

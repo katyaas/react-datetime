@@ -48,7 +48,7 @@ var DateTimePickerYears = createClass({
 				{ year: year, month: irrelevantMonth, date: irrelevantDate } );
 
 			if (typeof isValidYear === 'function') {
-				isDisabled = !isValidYear(currentYear, null, viewType);
+				isDisabled = !isValidYear(currentYear, null, 'year');
 			} else {
 				// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
 				// if ( i === -1 | i === 10 )

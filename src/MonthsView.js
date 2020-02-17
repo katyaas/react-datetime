@@ -39,7 +39,7 @@ var DateTimePickerMonths = createClass({
 			currentMonth = this.props.viewDate.clone().set({ year: year, month: i, date: irrelevantDate });
 
 			if (typeof isValidMonth === 'function') {
-				isDisabled = !isValidMonth(currentMonth);
+				isDisabled = !isValidMonth(currentMonth, null, 'month');
 			} else {
 				noOfDaysInMonth = currentMonth.endOf( 'month' ).format( 'D' );
 				daysInMonth = Array.from({ length: noOfDaysInMonth }, function( e, i ) {
