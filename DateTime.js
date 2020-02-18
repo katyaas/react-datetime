@@ -5,6 +5,7 @@ var assign = require('object-assign'),
 	createClass = require('create-react-class'),
 	moment = require('moment'),
 	React = require('react'),
+	defaultMaskComponent = require('react-bootstrap-maskedinput').default,
 	CalendarContainer = require('./src/CalendarContainer'),
 	onClickOutside = require('react-onclickoutside').default
 	;
@@ -33,18 +34,29 @@ var Datetime = createClass({
 		utc: TYPES.bool,
 		displayTimeZone: TYPES.string,
 		input: TYPES.bool,
+		mask: TYPES.object,
 		// dateFormat: TYPES.string | TYPES.bool,
 		// timeFormat: TYPES.string | TYPES.bool,
 		inputProps: TYPES.object,
+		disableOnBlurInputOnOpen: TYPES.bool,
 		timeConstraints: TYPES.object,
 		viewMode: TYPES.oneOf([viewModes.YEARS, viewModes.MONTHS, viewModes.DAYS, viewModes.TIME]),
 		isValidDate: TYPES.func,
+		isValidUnix: TYPES.func,
 		open: TYPES.bool,
 		strictParsing: TYPES.bool,
 		closeOnSelect: TYPES.bool,
 		closeOnTab: TYPES.bool
 	},
 
+	isUnfilled: function(value) {
+		return typeof value === 'string' && value.split('').find(function( char ) {
+			return char === '_';
+		});
+	},
+	isWithMask: function() {
+		return this.props.mask && this.props.mask.maskedProps;
+	},
 	getInitialState: function() {
 		this.checkTZ( this.props );
 		
@@ -57,6 +69,39 @@ var Datetime = createClass({
 			(this.props.viewMode || state.updateOn || viewModes.DAYS) : viewModes.TIME;
 
 		return state;
+	},
+
+	renderPagination: function(props) {
+		var type = props.type, renderRange = props.renderRange,
+			params = props.params || {};
+
+		var isValidUnix = this.props.isValidUnix;
+		var viewDate = params.viewDate || this.state.viewDate;
+		var validatePagination = this.props.validatePagination;
+		var addValue = {}, subtractValue = {};
+
+		Object.defineProperty(addValue, type, {
+			value: viewDate[type](),
+			enumerable: true,
+		});
+		Object.defineProperty(subtractValue, type, {
+			value: viewDate[type](),
+			enumerable: true,
+		});
+
+		var nextDatesTab = viewDate.clone().startOf(type).add(params.add || renderRange, type);
+		var prevDatesTab = viewDate.clone().endOf(type).startOf('days').subtract(params.subtract || renderRange, type);
+		var nextDate = true;
+		var prevDate = true;
+
+		if ((typeof isValidUnix === 'function') && validatePagination) {
+			nextDate = isValidUnix(nextDatesTab);
+			prevDate = isValidUnix(prevDatesTab);
+		}
+		return [
+			React.createElement('th', { key: 'prev', className: 'rdtPrev' + (prevDate ? '' : ' disabled'), onClick: prevDate ? this.subtractTime( renderRange, type ) : null }, React.createElement('span', {}, '‹' )),
+			React.createElement('th', { key: 'next', className: 'rdtNext' + (nextDate ? '' : ' disabled'), onClick: nextDate ? this.addTime( renderRange, type ) : null }, React.createElement('span', {}, '›' ))
+		];
 	},
 
 	parseDate: function (date, formats) {
@@ -76,10 +121,18 @@ var Datetime = createClass({
 	getStateFromProps: function( props ) {
 		var formats = this.getFormats( props ),
 			date = props.value || props.defaultValue,
+			isValidUnix = props.isValidUnix,
+			validatePagination = props.validatePagination,
 			selectedDate, viewDate, updateOn, inputValue
 			;
 
 		selectedDate = this.parseDate(date, formats);
+
+		if ((typeof isValidUnix === 'function') && validatePagination) {
+			if (selectedDate && !isValidUnix(selectedDate)) {
+				selectedDate = null;
+			}
+		}
 
 		viewDate = this.parseDate(props.viewDate, formats);
 
@@ -152,7 +205,13 @@ var Datetime = createClass({
 
 		if ( nextProps.value !== this.props.value ||
 			formats.datetime !== this.getFormats( this.props ).datetime ) {
-			updatedState = this.getStateFromProps( nextProps );
+			if (this.isWithMask()) {
+				if (!this.isUnfilled()) {
+					updatedState = this.getStateFromProps( nextProps );
+				}
+			} else {
+				updatedState = this.getStateFromProps( nextProps );
+			}
 		}
 
 		if ( updatedState.open === undefined ) {
@@ -216,12 +275,23 @@ var Datetime = createClass({
 	},
 
 	onInputChange: function( e ) {
-		var value = e.target === null ? e : e.target.value,
-			localMoment = this.localMoment( value, this.state.inputFormat ),
-			update = { inputValue: value }
-			;
+		var value = e.target === null ? e : e.target.value;
+		var withMask = this.isWithMask();
 
-		if ( localMoment.isValid() && !this.props.value ) {
+		if ( withMask ) {
+			// to be determined if it needed or not
+			// if (!value) {
+			// 	return;
+			// }
+			if ( this.isUnfilled(value) ) {
+				return this.props.onChange(value);
+			}
+		}
+
+		var localMoment = this.localMoment( value, this.state.inputFormat ),
+			update = { inputValue: value };
+
+		if ( localMoment.isValid() && !this.props.value) {
 			update.selectedDate = localMoment;
 			update.viewDate = localMoment.clone().startOf('month');
 		} else {
@@ -229,7 +299,8 @@ var Datetime = createClass({
 		}
 
 		return this.setState( update, function() {
-			return this.props.onChange( localMoment.isValid() ? localMoment : this.state.inputValue );
+			var editedValue = withMask ? value : this.state.inputValue;
+			return this.props.onChange(localMoment.isValid() ? localMoment : editedValue );
 		});
 	},
 
@@ -237,6 +308,16 @@ var Datetime = createClass({
 		if ( e.which === 9 && this.props.closeOnTab ) {
 			this.closeCalendar();
 		}
+	},
+
+	onInputBlur: function ( ) {
+		var me = this;
+		return function( e ) {
+			if ( me.props.disableInputOnBlurOnOpen && me.state.open) {
+				return;
+			}
+			return typeof me.props.inputProps.onBlur === 'function' && me.props.inputProps.onBlur( e );
+		};
 	},
 
 	showView: function( view ) {
@@ -369,6 +450,7 @@ var Datetime = createClass({
 
 	openCalendar: function( e ) {
 		if ( !this.state.open ) {
+			e.persist();
 			this.setState({ open: true }, function() {
 				this.props.onFocus( e );
 			});
@@ -416,9 +498,9 @@ var Datetime = createClass({
 	},
 
 	componentProps: {
-		fromProps: ['value', 'isValidDate', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints'],
+		fromProps: ['value', 'isValidDate', 'isValidUnix', 'renderDay', 'renderMonth', 'renderYear', 'timeConstraints', 'validatePagination'],
 		fromState: ['viewDate', 'selectedDate', 'updateOn'],
-		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside']
+		fromThis: ['setDate', 'setTime', 'showView', 'addTime', 'subtractTime', 'updateSelectedDate', 'localMoment', 'handleClickOutside', 'renderPagination']
 	},
 
 	getComponentProps: function() {
@@ -483,6 +565,14 @@ var Datetime = createClass({
 
 			if ( this.props.renderInput ) {
 				children = [ React.createElement('div', { key: 'i' }, this.props.renderInput( finalInputProps, this.openCalendar, this.closeCalendar )) ];
+			} else if ( this.isWithMask() ) {
+				children = [ 
+					React.createElement( this.props.mask.maskComponent || defaultMaskComponent, assign(
+						this.props.mask.maskedProps,
+						finalInputProps,
+						{ key: 'i', onBlur: this.onInputBlur() }
+					)
+				)];  
 			} else {
 				children = [ React.createElement('input', assign({ key: 'i' }, finalInputProps ))];
 			}

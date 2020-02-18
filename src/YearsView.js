@@ -1,22 +1,30 @@
 'use strict';
 
 var React = require('react'),
+	moment = require('moment'),
 	createClass = require('create-react-class')
-;
+	;
+
+var viewType = 'years';
 
 var DateTimePickerYears = createClass({
 	render: function() {
 		var year = parseInt( this.props.viewDate.year() / 10, 10 ) * 10;
-
+		var viewDate = {};
+		viewDate = Object.defineProperty(viewDate, viewType, {
+			value: year,
+			enumerable: true,
+		});
+		var pagination  = this.props.renderPagination({ type: viewType, renderRange: 10, params: { viewDate: moment.utc(viewDate), add: 10, subtract: 1 } });
 		return React.createElement('div', { className: 'rdtYears' }, [
 			React.createElement('table', { key: 'a' }, React.createElement('thead', {}, React.createElement('tr', {}, [
-				React.createElement('th', { key: 'prev', className: 'rdtPrev', onClick: this.props.subtractTime( 10, 'years' )}, React.createElement('span', {}, '‹' )),
+				pagination[0],
 				React.createElement('th', { key: 'year', className: 'rdtSwitch', onClick: this.props.showView( 'years' ), colSpan: 2 }, year + '-' + ( year + 9 ) ),
-				React.createElement('th', { key: 'next', className: 'rdtNext', onClick: this.props.addTime( 10, 'years' )}, React.createElement('span', {}, '›' ))
+				pagination[1]
 			]))),
 			React.createElement('table', { key: 'years' }, React.createElement('tbody',  {}, this.renderYears( year )))
 		]);
-	},
+	},	
 
 	renderYears: function( year ) {
 		var years = [],
@@ -25,6 +33,7 @@ var DateTimePickerYears = createClass({
 			renderer = this.props.renderYear || this.renderYear,
 			selectedDate = this.props.selectedDate,
 			isValid = this.props.isValidDate || this.alwaysValidDate,
+			isValidYear = this.props.isValidUnix,
 			classes, props, currentYear, isDisabled, noOfDaysInYear, daysInYear, validDay,
 			// Month and date are irrelevant here because
 			// we're only interested in the year
@@ -38,21 +47,24 @@ var DateTimePickerYears = createClass({
 			currentYear = this.props.viewDate.clone().set(
 				{ year: year, month: irrelevantMonth, date: irrelevantDate } );
 
-			// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
-			// if ( i === -1 | i === 10 )
+			if (typeof isValidYear === 'function') {
+				isDisabled = !isValidYear(currentYear, null, 'year');
+			} else {
+				// Not sure what 'rdtOld' is for, commenting out for now as it's not working properly
+				// if ( i === -1 | i === 10 )
 				// classes += ' rdtOld';
-
-			noOfDaysInYear = currentYear.endOf( 'year' ).format( 'DDD' );
-			daysInYear = Array.from({ length: noOfDaysInYear }, function( e, i ) {
-				return i + 1;
-			});
-
-			validDay = daysInYear.find(function( d ) {
-				var day = currentYear.clone().dayOfYear( d );
-				return isValid( day );
-			});
-
-			isDisabled = ( validDay === undefined );
+				noOfDaysInYear = currentYear.endOf( 'year' ).format( 'DDD' );
+				daysInYear = Array.from({ length: noOfDaysInYear }, function( e, i ) {
+					return i + 1;
+				});
+	
+				validDay = daysInYear.find(function( d ) {
+					var day = currentYear.clone().dayOfYear( d );
+					return isValid( day );
+				});
+	
+				isDisabled = ( validDay === undefined );
+			}
 
 			if ( isDisabled )
 				classes += ' rdtDisabled';
